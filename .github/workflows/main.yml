@@ -11,3 +11,12 @@ on:
           - staging
           - uat
  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          repository: langgenius/dify
+          ref: refs/tags/1.0.0
