@@ -197,11 +197,13 @@ x-shared-env: &shared-api-worker-env
   CHROMA_DATABASE: ${CHROMA_DATABASE:-default_database}
   CHROMA_AUTH_PROVIDER: ${CHROMA_AUTH_PROVIDER:-chromadb.auth.token_authn.TokenAuthClientProvider}
   CHROMA_AUTH_CREDENTIALS: ${CHROMA_AUTH_CREDENTIALS:-}
-  ORACLE_HOST: ${ORACLE_HOST:-oracle}
-  ORACLE_PORT: ${ORACLE_PORT:-1521}
   ORACLE_USER: ${ORACLE_USER:-dify}
   ORACLE_PASSWORD: ${ORACLE_PASSWORD:-dify}
-  ORACLE_DATABASE: ${ORACLE_DATABASE:-FREEPDB1}
+  ORACLE_DSN: ${ORACLE_DSN:-oracle:1521/FREEPDB1}
+  ORACLE_CONFIG_DIR: ${ORACLE_CONFIG_DIR:-/app/api/storage/wallet}
+  ORACLE_WALLET_LOCATION: ${ORACLE_WALLET_LOCATION:-/app/api/storage/wallet}
+  ORACLE_WALLET_PASSWORD: ${ORACLE_WALLET_PASSWORD:-dify}
+  ORACLE_IS_AUTONOMOUS: ${ORACLE_IS_AUTONOMOUS:-false}
   RELYT_HOST: ${RELYT_HOST:-db}
   RELYT_PORT: ${RELYT_PORT:-5432}
   RELYT_USER: ${RELYT_USER:-postgres}
@@ -359,7 +361,7 @@ x-shared-env: &shared-api-worker-env
   OPENSEARCH_NOFILE_HARD: ${OPENSEARCH_NOFILE_HARD:-65536}
   NGINX_SERVER_NAME: ${NGINX_SERVER_NAME:-_}
   NGINX_HTTPS_ENABLED: ${NGINX_HTTPS_ENABLED:-false}
-  NGINX_PORT: ${NGINX_PORT:-80}
+  NGINX_PORT: ${NGINX_PORT:-6000}
   NGINX_SSL_PORT: ${NGINX_SSL_PORT:-443}
   NGINX_SSL_CERT_FILENAME: ${NGINX_SSL_CERT_FILENAME:-dify.crt}
   NGINX_SSL_CERT_KEY_FILENAME: ${NGINX_SSL_CERT_KEY_FILENAME:-dify.key}
@@ -424,6 +426,8 @@ services:
       SENTRY_DSN: ${API_SENTRY_DSN:-}
       SENTRY_TRACES_SAMPLE_RATE: ${API_SENTRY_TRACES_SAMPLE_RATE:-1.0}
       SENTRY_PROFILES_SAMPLE_RATE: ${API_SENTRY_PROFILES_SAMPLE_RATE:-1.0}
+      PLUGIN_REMOTE_INSTALL_HOST: ${EXPOSE_PLUGIN_DEBUGGING_HOST:-localhost}
+      PLUGIN_REMOTE_INSTALL_PORT: ${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}
       PLUGIN_MAX_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
       INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
     depends_on:
@@ -500,8 +504,8 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
-    # ports:
-    #   - '${EXPOSE_DB_PORT:-5432}:5432'
+    ports:
+      - "${EXPOSE_DB_PORT:-5432}:5432"
 
   # The redis cache.
   redis:
@@ -554,8 +558,8 @@ services:
       PPROF_ENABLED: ${PLUGIN_PPROF_ENABLED:-false}
       DIFY_INNER_API_URL: ${PLUGIN_DIFY_INNER_API_URL:-http://api:5001}
       DIFY_INNER_API_KEY: ${INNER_API_KEY_FOR_PLUGIN:-QaHbTe77CtuXmsfyhR7+vRjI/+XbV1AaFy691iy+kGDv2Jvy0/eAh8Y1}
-      PLUGIN_REMOTE_INSTALLING_HOST: ${PLUGIN_REMOTE_INSTALL_HOST:-0.0.0.0}
-      PLUGIN_REMOTE_INSTALLING_PORT: ${PLUGIN_REMOTE_INSTALL_PORT:-5003}
+      PLUGIN_REMOTE_INSTALLING_HOST: ${EXPOSE_PLUGIN_DEBUGGING_HOST:-localhost}
+      PLUGIN_REMOTE_INSTALLING_PORT: ${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}
       PLUGIN_WORKING_PATH: ${PLUGIN_WORKING_PATH:-/app/storage/cwd}
       FORCE_VERIFYING_SIGNATURE: ${FORCE_VERIFYING_SIGNATURE:-true}
     ports:
@@ -593,8 +597,8 @@ services:
   # use `docker-compose --profile certbot up` to start the certbot service.
   certbot:
     image: certbot/certbot
-    # profiles:
-    #   - certbot
+    profiles:
+      - certbot
     volumes:
       - ./volumes/certbot/conf:/etc/letsencrypt
       - ./volumes/certbot/www:/var/www/html
@@ -657,9 +661,9 @@ services:
   # The Weaviate vector store.
   weaviate:
     image: semitechnologies/weaviate:1.19.0
-    # profiles:
-    #   - ""
-    #   - weaviate
+    profiles:
+      - ""
+      - weaviate
     restart: always
     volumes:
       # Mount the Weaviate data directory to the con tainer.
@@ -682,8 +686,8 @@ services:
   # (if used, you need to set VECTOR_STORE to qdrant in the api & worker service.)
   qdrant:
     image: langgenius/qdrant:v1.7.3
-    # profiles:
-    #   - qdrant
+    profiles:
+      - qdrant
     restart: always
     volumes:
       - ./volumes/qdrant:/qdrant/storage
@@ -693,8 +697,8 @@ services:
   # The Couchbase vector store.
   couchbase-server:
     build: ./couchbase-server
-    # profiles:
-    #   - couchbase
+    profiles:
+      - couchbase
     restart: always
     environment:
       - CLUSTER_NAME=dify_search
@@ -730,8 +734,8 @@ services:
   # The pgvector vector database.
   pgvector:
     image: pgvector/pgvector:pg16
-    # profiles:
-    #   - pgvector
+    profiles:
+      - pgvector
     restart: always
     environment:
       PGUSER: ${PGVECTOR_PGUSER:-postgres}
@@ -752,8 +756,8 @@ services:
   # pgvecto-rs vector store
   pgvecto-rs:
     image: tensorchord/pgvecto-rs:pg16-v0.3.0
-    # profiles:
-    #   - pgvecto-rs
+    profiles:
+      - pgvecto-rs
     restart: always
     environment:
       PGUSER: ${PGVECTOR_PGUSER:-postgres}
@@ -774,8 +778,8 @@ services:
   # Chroma vector database
   chroma:
     image: ghcr.io/chroma-core/chroma:0.5.20
-    # profiles:
-    #   - chroma
+    profiles:
+      - chroma
     restart: always
     volumes:
       - ./volumes/chroma:/chroma/chroma
@@ -787,8 +791,8 @@ services:
   # OceanBase vector database
   oceanbase:
     image: quay.io/oceanbase/oceanbase-ce:4.3.3.0-100000142024101215
-    # profiles:
-    #   - oceanbase
+    profiles:
+      - oceanbase
     restart: always
     volumes:
       - ./volumes/oceanbase/data:/root/ob
@@ -804,8 +808,8 @@ services:
   # Oracle vector database
   oracle:
     image: container-registry.oracle.com/database/free:latest
-    # profiles:
-    #   - oracle
+    profiles:
+      - oracle
     restart: always
     volumes:
       - source: oradata
@@ -820,8 +824,8 @@ services:
   etcd:
     container_name: milvus-etcd
     image: quay.io/coreos/etcd:v3.5.5
-    # profiles:
-    #   - milvus
+    profiles:
+      - milvus
     environment:
       ETCD_AUTO_COMPACTION_MODE: ${ETCD_AUTO_COMPACTION_MODE:-revision}
       ETCD_AUTO_COMPACTION_RETENTION: ${ETCD_AUTO_COMPACTION_RETENTION:-1000}
@@ -841,8 +845,8 @@ services:
   minio:
     container_name: milvus-minio
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
-    # profiles:
-    #   - milvus
+    profiles:
+      - milvus
     environment:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
@@ -860,8 +864,8 @@ services:
   milvus-standalone:
     container_name: milvus-standalone
     image: milvusdb/milvus:v2.5.0-beta
-    # profiles:
-    #   - milvus
+    profiles:
+      - milvus
     command: ["milvus", "run", "standalone"]
     environment:
       ETCD_ENDPOINTS: ${ETCD_ENDPOINTS:-etcd:2379}
@@ -888,8 +892,8 @@ services:
   opensearch:
     container_name: opensearch
     image: opensearchproject/opensearch:latest
-    # profiles:
-    #   - opensearch
+    profiles:
+      - opensearch
     environment:
       discovery.type: ${OPENSEARCH_DISCOVERY_TYPE:-single-node}
       bootstrap.memory_lock: ${OPENSEARCH_BOOTSTRAP_MEMORY_LOCK:-true}
@@ -910,8 +914,8 @@ services:
   opensearch-dashboards:
     container_name: opensearch-dashboards
     image: opensearchproject/opensearch-dashboards:latest
-    # profiles:
-    #   - opensearch
+    profiles:
+      - opensearch
     environment:
       OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
     volumes:
@@ -925,8 +929,8 @@ services:
   myscale:
     container_name: myscale
     image: myscale/myscaledb:1.6.4
-    # profiles:
-    #   - myscale
+    profiles:
+      - myscale
     restart: always
     tty: true
     volumes:
@@ -941,9 +945,9 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
     container_name: elasticsearch
-    # profiles:
-    #   - elasticsearch
-    #   - elasticsearch-ja
+    profiles:
+      - elasticsearch
+      - elasticsearch-ja
     restart: always
     volumes:
       - ./elasticsearch/docker-entrypoint.sh:/docker-entrypoint-mount.sh
@@ -977,8 +981,8 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:8.14.3
     container_name: kibana
-    # profiles:
-    #   - elasticsearch
+    profiles:
+      - elasticsearch
     depends_on:
       - elasticsearch
     restart: always
@@ -1004,8 +1008,8 @@ services:
   # (if used, you need to set ETL_TYPE to Unstructured in the api & worker service.)
   unstructured:
     image: downloads.unstructured.io/unstructured-io/unstructured-api:latest
-    # profiles:
-    #   - unstructured
+    profiles:
+      - unstructured
     restart: always
     volumes:
       - ./volumes/unstructured:/app/data
@@ -1014,14 +1018,11 @@ networks:
   # create a network between sandbox, api and ssrf_proxy, and can not access outside.
   ssrf_proxy_network:
     # driver: bridge
-    # internal: true
     external: true
   milvus:
-    # driver: bridge
     external: true
   opensearch-net:
     # driver: bridge
-    # internal: true
     external: true
 
 volumes:
