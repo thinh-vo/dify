@@ -91,7 +91,7 @@ services:
       timeout: 3s
       retries: 30
     ports:
-      - ""${EXPOSE_DB_PORT:-5432}:5432""
+       - "${EXPOSE_DB_PORT:-5432}:5432"
 
   # The redis cache.
   redis:
@@ -241,8 +241,8 @@ services:
       - api
       - web
     ports:
-      - ""${EXPOSE_NGINX_PORT:-80}:"${NGINX_PORT:-80}""
-      - ""${EXPOSE_NGINX_SSL_PORT:-443}:"${NGINX_SSL_PORT:-443}""
+      - "${EXPOSE_NGINX_PORT:-80}:${NGINX_PORT:-80}"
+      - "${EXPOSE_NGINX_SSL_PORT:-443}:${NGINX_SSL_PORT:-443}"
 
   # The Weaviate vector store.
   weaviate:
@@ -524,7 +524,7 @@ services:
       - ./volumes/myscale/log:/var/log/clickhouse-server
       - ./volumes/myscale/config/users.d/custom_users_config.xml:/etc/clickhouse-server/users.d/custom_users_config.xml
     ports:
-      - "${MYSCALE_PORT:-8123}:"${MYSCALE_PORT:-8123}"
+      - "${MYSCALE_PORT:-8123}:${MYSCALE_PORT:-8123}"
 
   # https://www.elastic.co/guide/en/elasticsearch/reference/current/settings.html
   # https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-prod-prerequisites
